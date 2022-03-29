@@ -62,3 +62,44 @@ WHERE continent IS NOT NULL
 GROUP BY continent
 ORDER BY TotalD DESC;
 -- These results are pretty close to what we get before by using location = continent
+
+
+-- NEW CASES & NEW Deaths
+-- Evolution of infections day by day
+SELECT date, SUM(new_cases) AS Total_New_Cases_Per_Day, SUM(new_deaths) AS Total_New_Deaths_Per_Day
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths`
+WHERE continent IS NOT NULL
+GROUP BY date
+ORDER BY date;
+
+-- Evolution of infections day by day by Country
+SELECT date, location, SUM(new_cases) AS Total_New_Cases_Per_Day, SUM(new_deaths) AS Total_New_Deaths_Per_Day
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths`
+WHERE continent IS NOT NULL
+GROUP BY date,  location
+ORDER BY date;
+
+
+## Using Vax table
+-- New vaccinations
+SELECT death.location, death.continent, death.date, death.population, vax.new_vaccinations
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths` death
+JOIN `covidproject-345520.CovidProjectTraining.Covid_Vax` vax
+ON death.location = vax.location AND death.date = vax.date
+ORDER BY location, date
+
+
+-- Some improvements to see cumulated vaccinations
+WITH VaccinatedPop AS 
+(SELECT death.location, death.continent, death.date, death.population, vax.new_vaccinations, SUM(new_vaccinations) 
+OVER (PARTITION BY  death.location ORDER BY death.location, death.date) AS Cumulated_Vaccinations,
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths` death
+JOIN `covidproject-345520.CovidProjectTraining.Covid_Vax` vax
+ON death.location = vax.location AND death.date = vax.date
+WHERE death.continent IS NOT NULL
+ORDER BY location, date) 
+
+SELECT * FROM VaccinatedPop ;
+
+
+-- Date de première vaccination par pays ?
