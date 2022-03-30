@@ -99,7 +99,34 @@ ON death.location = vax.location AND death.date = vax.date
 WHERE death.continent IS NOT NULL
 ORDER BY location, date) 
 
-SELECT * FROM VaccinatedPop ;
+--SELECT * FROM VaccinatedPop ;
+-- If we want to see percentage of vaccinated population :
+SELECT location, continent, date,ROUND((Cumulated_Vaccinations/Population)*100, 2) FROM VaccinatedPop ;
 
 
--- Date de première vaccination par pays ?
+-- Date of first vaccination for each country 
+WITH VaccinatedPop AS 
+(
+    SELECT death.location, death.continent, death.date, death.population, vax.new_vaccinations, SUM(new_vaccinations) 
+    OVER (PARTITION BY  death.location ORDER BY death.location, death.date) AS Cumulated_Vaccinations,
+    FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths` death
+    JOIN `covidproject-345520.CovidProjectTraining.Covid_Vax` vax
+    ON death.location = vax.location AND death.date = vax.date
+    WHERE death.continent IS NOT NULL
+    ORDER BY location, date
+), VaxPercent AS
+(
+    SELECT location, 
+        continent, 
+        date, 
+        new_vaccinations,
+        ROW_NUMBER() OVER(PARTITION BY location ORDER BY date ASC) AS rank
+    FROM VaccinatedPop
+    WHERE new_vaccinations IS NOT NULL AND new_vaccinations > 0
+)
+SELECT *
+FROM VaxPercent
+WHERE rank = 1
+ORDER BY date
+
+
