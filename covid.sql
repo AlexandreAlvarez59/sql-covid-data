@@ -129,4 +129,43 @@ FROM VaxPercent
 WHERE rank = 1
 ORDER BY date
 
+-- Test of creation of TEMP table
+CREATE TEMP TABLE PercentPopulationVaccinated
+(
+location STRING(255),
+continent STRING(255),
+date DATE,
+Population numeric,
+new_vaccinations numeric,
+Cumulated_Vaccinations numeric
+) AS 
+
+SELECT death.location, death.continent, death.date, CAST(death.population AS NUMERIC), CAST(vax.new_vaccinations AS NUMERIC), SUM(CAST(vax.new_vaccinations AS NUMERIC)) 
+OVER (PARTITION BY  death.location ORDER BY death.location, death.date) AS Cumulated_Vaccinations
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths` death
+JOIN `covidproject-345520.CovidProjectTraining.Covid_Vax` vax
+ON death.location = vax.location AND death.date = vax.date
+ORDER BY location, date;
+
+-- Perform same request than before with our Temps table
+SELECT location, continent, date, population, ROUND((Cumulated_Vaccinations/Population)*100, 2) AS Percent_Vaxed
+FROM PercentPopulationVaccinated;
+
+
+-- Same but using View
+CREATE VIEW `covidproject-345520.CovidProjectTraining.PercentPopulationVaccinated2` 
+(
+location,
+continent,
+date,
+Population,
+new_vaccinations,
+Cumulated_Vaccinations
+) AS 
+SELECT death.location, death.continent, death.date, CAST(death.population AS NUMERIC), CAST(vax.new_vaccinations AS NUMERIC), SUM(CAST(vax.new_vaccinations AS NUMERIC)) 
+OVER (PARTITION BY  death.location ORDER BY death.location, death.date) AS Cumulated_Vaccinations
+FROM `covidproject-345520.CovidProjectTraining.Covid_Deaths` death
+JOIN `covidproject-345520.CovidProjectTraining.Covid_Vax` vax
+ON death.location = vax.location AND death.date = vax.date
+ORDER BY location, date;
 
